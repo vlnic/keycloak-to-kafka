@@ -1,6 +1,9 @@
 package com.github.vlnic.keycloak.event.provider;
 
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.jboss.logging.Logger;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProvider;
@@ -41,6 +44,18 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
 
     private void publishEvent(Event event) {
         log.info("publish common event");
+        EventToRecord eventRecord = new EventToRecord(event);
+        producer.send(
+                new ProducerRecord("user_events", event.hashCode(), eventRecord),
+                new Callback() {
+                    @Override
+                    public void onCompletion(RecordMetadata recordMetadata, Exception e) {
+                        if (e != null) {
+                            log.error("Send failed for record: {}", eventRecord, e);
+                        }
+                    }
+                }
+        );
     }
 
     private void publishAdminEvent(AdminEvent adminEvent, boolean includeRepresentation) {
