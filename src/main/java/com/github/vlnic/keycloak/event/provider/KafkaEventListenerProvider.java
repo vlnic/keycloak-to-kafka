@@ -13,8 +13,6 @@ import org.keycloak.models.KeycloakSession;
 
 public class KafkaEventListenerProvider implements EventListenerProvider {
 
-    private final KafkaConfig cnf;
-
     private static final Logger log = Logger.getLogger(KafkaEventListenerProvider.class);
 
     private final EventListenerTransaction tx = new EventListenerTransaction(this::publishAdminEvent, this::publishEvent);
@@ -22,7 +20,6 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
     private KafkaProducer producer;
 
     public KafkaEventListenerProvider(KafkaConfig config, KeycloakSession session) {
-        this.cnf = config;
         this.producer = new KafkaProducer(config.getProperties());
         session.getTransactionManager().enlistAfterCompletion(tx);
     }
