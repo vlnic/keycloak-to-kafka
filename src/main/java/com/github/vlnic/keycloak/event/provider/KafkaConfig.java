@@ -9,6 +9,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Locale;
 import java.util.Properties;
+import org.apache.kafka.clients.producer.ProducerConfig;
 
 public class KafkaConfig {
 
@@ -20,8 +21,10 @@ public class KafkaConfig {
 
     public KafkaConfig() {
         Properties props = new Properties();
-        props.put("key.serializer", StringSerializer.class.getName());
-        props.put("value.serializer", StringSerializer.class.getName());
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put("security.protocol", "SASL_SSL");
+        props.put("sasl.mechanism", "PLAIN");
         log.info("initialized KafkaConfig");
         this.properties = props;
     }
@@ -37,6 +40,10 @@ public class KafkaConfig {
                 resolveConfigVar(cnf, "bootstrap_servers", "")
         );
         config.properties.put("acks", resolveConfigVar(cnf, "acks", "all"));
+        String authToken = resolveConfigVar(cnf, "kafka_auth_token", "");
+        String username = resolveConfigVar(cnf, "kafka_username", "");
+
+        config.properties.put("sasl.jaas.config", prepareSaslConfig(cnf));
 
         return config;
     }
@@ -53,6 +60,17 @@ public class KafkaConfig {
             }
         }
         return value;
+    }
+
+    private static String prepareSaslConfig(Scope cnf) {
+        String authToken = resolveConfigVar(cnf, "kafka_auth_token", "");
+        String username = resolveConfigVar(cnf, "kafka_username", "");
+
+        return System.out.printf(
+                "org.apache.kafka.common.security.plain.PlainLoginModule required username=%s\\password=%s",
+                username,
+                authToken
+        ).toString();
     }
 
     public Properties getProperties() {
