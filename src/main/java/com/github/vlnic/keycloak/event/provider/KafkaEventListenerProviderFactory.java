@@ -7,14 +7,18 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 public class KafkaEventListenerProviderFactory implements EventListenerProviderFactory{
+
+    private Config.Scope cnf;
+
     @Override
     public EventListenerProvider create(KeycloakSession keycloakSession) {
-        return null;
+        KafkaConfig config = KafkaConfig.createFromScope(this.cnf);
+        return new KafkaEventListenerProvider(config, keycloakSession);
     }
 
     @Override
     public void init(Config.Scope scope) {
-
+        this.cnf = scope;
     }
 
     @Override
@@ -23,12 +27,10 @@ public class KafkaEventListenerProviderFactory implements EventListenerProviderF
     }
 
     @Override
-    public void close() {
-
-    }
+    public void close() {}
 
     @Override
     public String getId() {
-        return null;
+        return "keycloak-to-kafka";
     }
 }

@@ -5,8 +5,6 @@ import org.keycloak.Config.Scope;
 
 import org.jboss.logging.Logger;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Locale;
 import java.util.Properties;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -28,12 +26,8 @@ public class KafkaConfig {
         this.properties = props;
     }
 
-    public static KafkaConfig createFromScope(Scope cnf) throws UnknownHostException {
+    public static KafkaConfig createFromScope(Scope cnf) {
         KafkaConfig config = new KafkaConfig();
-        config.properties.put(
-                "client.id",
-                resolveConfigVar(cnf, "client_id", InetAddress.getLocalHost().getHostName())
-        );
         config.properties.put(
                 "bootstrap.servers",
                 resolveConfigVar(cnf, "kafka_bootstrap_servers", "")
