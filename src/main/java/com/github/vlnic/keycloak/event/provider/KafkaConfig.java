@@ -30,12 +30,12 @@ public class KafkaConfig {
         KafkaConfig config = new KafkaConfig();
         config.properties.put(
                 "bootstrap.servers",
-                resolveConfigVar(cnf, "kafka_bootstrap_servers", "")
+                resolveConfigVar(cnf, "bootstrap_servers", "")
         );
         config.topicName = resolveConfigVar(cnf, "kafka_topic_name", "keycloak-events");
 
         config.properties.put("acks", resolveConfigVar(cnf, "acks", "all"));
-        if (resolveConfigVar(cnf, "kafka_security_protocol", null) != null) {
+        if (resolveConfigVar(cnf, "security_protocol", null) != null) {
             config.properties.put("security.protocol", "SASL_SSL");
             config.properties.put("sasl.mechanism", "PLAIN");
             config.properties.put("sasl.jaas.config", prepareSaslConfig(cnf));
