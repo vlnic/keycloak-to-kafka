@@ -1,9 +1,7 @@
 package com.github.vlnic.keycloak.event.provider;
 
-import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.jboss.logging.Logger;
 import org.keycloak.events.Event;
 import org.keycloak.events.EventListenerProvider;
@@ -17,10 +15,13 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
 
     private final EventListenerTransaction tx = new EventListenerTransaction(this::publishAdminEvent, this::publishEvent);
 
-    private KafkaProducer producer;
+    private final KafkaProducer producer;
+
+    private final String topic;
 
     public KafkaEventListenerProvider(KafkaConfig config, KeycloakSession session) {
-        this.producer = new KafkaProducer(config.getProperties());
+        this.topic = config.getTopicName();
+        this.producer = new KafkaProducer<>(config.getProperties());
         session.getTransactionManager().enlistAfterCompletion(tx);
     }
 
@@ -41,25 +42,25 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
 
     private void publishEvent(Event event) {
         log.info("publish common event");
-        EventToRecord eventRecord = new EventToRecord(event);
-        producer.send(
-                new ProducerRecord("user_events", event.hashCode(), eventRecord),
-                new Callback() {
-                    @Override
-                    public void onCompletion(RecordMetadata recordMetadata, Exception e) {
-                        if (e != null) {
-                            log.error("Send failed for record: {}", eventRecord, e);
-                        }
-                    }
+        try {
+            EventToRecord eventRecord = new EventToRecord(event);
+            ProducerRecord<String, String> record = new ProducerRecord<>(topic, event.getId(), eventRecord.toString());
+            producer.send(record, (md, ex) -> {
+                if (ex != null) {
+                    log.error("exception occurred in producer for review :" + record.value() + ", exception is " + ex);
+                    ex.printStackTrace();
+                } else {
+                    log.info("Sent msg to " + md.partition() + " with offset " + md.offset() + " at " + md.timestamp());
                 }
-        );
+            });
+            producer.flush();
+            producer.close();
+        } catch (Exception e) {
+            System.err.println("Error: exception " + e);
+        }
     }
 
     private void publishAdminEvent(AdminEvent adminEvent, boolean includeRepresentation) {
         log.info("publish admin event");
-    }
-
-    public KafkaProducer getProducer() {
-        return producer;
     }
 }
