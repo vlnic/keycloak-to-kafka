@@ -44,7 +44,7 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
         log.info("publish common event");
         try {
             EventToRecord eventRecord = new EventToRecord(event);
-            ProducerRecord<String, String> record = new ProducerRecord<>(topic, event.getId(), eventRecord.toString());
+            ProducerRecord<String, String> record = new ProducerRecord<>(topic, event.getId(), eventRecord.toJson());
             producer.send(record, (md, ex) -> {
                 if (ex != null) {
                     log.error("exception occurred in producer for review :" + record.value() + ", exception is " + ex);

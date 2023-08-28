@@ -7,7 +7,6 @@ import org.jboss.logging.Logger;
 
 import java.util.Locale;
 import java.util.Properties;
-import org.apache.kafka.clients.producer.ProducerConfig;
 
 public class KafkaConfig {
 
@@ -19,18 +18,19 @@ public class KafkaConfig {
 
     public KafkaConfig() {
         Properties props = new Properties();
-        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put("key.serializer", StringSerializer.class.getName());
+        props.put("value.serializer", StringSerializer.class.getName());
 
         log.info("initialized KafkaConfig");
         this.properties = props;
     }
 
     public static KafkaConfig createFromScope(Scope cnf) {
+        log.info("scope config: " + cnf);
         KafkaConfig config = new KafkaConfig();
         config.properties.put(
                 "bootstrap.servers",
-                resolveConfigVar(cnf, "bootstrap_servers", "")
+                resolveConfigVar(cnf, "bootstrap_servers", "localhost:9092")
         );
         config.topicName = resolveConfigVar(cnf, "kafka_topic_name", "keycloak-events");
 
@@ -46,7 +46,7 @@ public class KafkaConfig {
         return config;
     }
 
-    public static String resolveConfigVar(Scope config, String varName, String defaultValue) {
+    private static String resolveConfigVar(Scope config, String varName, String defaultValue) {
         String value = defaultValue;
         if (config != null && config.get(varName) != null) {
             value = config.get(varName);
