@@ -43,7 +43,7 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
     private void publishEvent(Event event) {
         log.info("publish common event");
         try {
-            EventToRecord eventRecord = new EventToRecord(event);
+            EventToRecord eventRecord = new EventToRecord(event, EventToRecord.USER_EVENT);
             ProducerRecord<String, String> record = new ProducerRecord<>(topic, event.getId(), eventRecord.toJson());
             producer.send(record, (md, ex) -> {
                 if (ex != null) {
