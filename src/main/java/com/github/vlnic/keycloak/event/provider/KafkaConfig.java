@@ -14,7 +14,9 @@ public class KafkaConfig {
 
     private Properties properties;
 
-    private String topicName;
+    private String defaultTopic;
+
+    private String adminEventTopic;
 
     public KafkaConfig() {
         Properties props = new Properties();
@@ -26,13 +28,15 @@ public class KafkaConfig {
     }
 
     public static KafkaConfig createFromScope(Scope cnf) {
-        log.info("scope config: " + cnf);
+        log.info("scope bootstrap servers: " + cnf.get("bootstrap_servers"));
+        log.info("scope bootstrap kafka_topic_name: " + cnf.get("kafka_topic_name"));
         KafkaConfig config = new KafkaConfig();
         config.properties.put(
                 "bootstrap.servers",
                 resolveConfigVar(cnf, "bootstrap_servers", "localhost:9092")
         );
-        config.topicName = resolveConfigVar(cnf, "kafka_topic_name", "keycloak-events");
+        config.defaultTopic = resolveConfigVar(cnf, "kafka_topic_name", "keycloak-events");
+        config.adminEventTopic = resolveConfigVar(cnf, "kafka_admin_topic_name", null);
 
         config.properties.put("acks", resolveConfigVar(cnf, "acks", "all"));
         if (resolveConfigVar(cnf, "security_protocol", null) != null) {
@@ -79,5 +83,12 @@ public class KafkaConfig {
         return properties;
     }
 
-    public String getTopicName() { return topicName; }
+    public String getDefaultTopic() { return defaultTopic; }
+
+    public String getAdminEventTopic() {
+        if (this.adminEventTopic == null) {
+            return this.defaultTopic;
+        }
+        return adminEventTopic;
+    }
 }

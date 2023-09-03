@@ -19,10 +19,16 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
 
     private final String topic;
 
+    private final KafkaConfig config;
+
+    private KeycloakSession session;
+
     public KafkaEventListenerProvider(KafkaConfig config, KeycloakSession session) {
-        this.topic = config.getTopicName();
+        this.config = config;
+        this.session = session;
+        this.topic = config.getDefaultTopic();
         this.producer = new KafkaProducer<>(config.getProperties());
-        session.getTransactionManager().enlistAfterCompletion(tx);
+        this.session.getTransactionManager().enlistAfterCompletion(tx);
     }
 
     @Override
@@ -41,26 +47,29 @@ public class KafkaEventListenerProvider implements EventListenerProvider {
     }
 
     private void publishEvent(Event event) {
-        log.info("publish common event");
         try {
             EventToRecord eventRecord = new EventToRecord(event, EventToRecord.USER_EVENT);
-            ProducerRecord<String, String> record = new ProducerRecord<>(topic, event.getId(), eventRecord.toJson());
+            ProducerRecord<String, String> record = new ProducerRecord<>(config.getDefaultTopic(), event.getId(), eventRecord.toJson());
             producer.send(record, (md, ex) -> {
                 if (ex != null) {
                     log.error("exception occurred in producer for review :" + record.value() + ", exception is " + ex);
                     ex.printStackTrace();
                 } else {
-                    log.info("Sent msg to " + md.partition() + " with offset " + md.offset() + " at " + md.timestamp());
+                    log.debug("Sent msg to " + md.partition() + " with offset " + md.offset() + " at " + md.timestamp());
                 }
             });
             producer.flush();
             producer.close();
         } catch (Exception e) {
-            System.err.println("Error: exception " + e);
+            log.error("keycloak-to-kafka: failed produce event: " + e.getMessage());
         }
     }
 
     private void publishAdminEvent(AdminEvent adminEvent, boolean includeRepresentation) {
         log.info("publish admin event");
+    }
+
+    private void produce() {
+
     }
 }
